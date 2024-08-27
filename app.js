@@ -2,15 +2,14 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// Middleware to parse JSON request bodies
 app.use(express.json());
-
-// Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Import and use authentication routes
 const authRoutes = require('./routes/auth');
+const videoRoutes = require('./routes/video')
+
 app.use('/auth', authRoutes);
+app.use('/video', videoRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

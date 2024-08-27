@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// for now, we will hardcode the user log in details
+// For now, we will hardcode the user log in details
 const users = {
   user1: 'password1',
   user2: 'password2'
