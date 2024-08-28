@@ -57,5 +57,12 @@ router.get('/download/:filename', (req, res) => {
       res.status(404).send('File not found');
     }
   });
+
+  // List uploaded files route
+router.get('/files', (req, res) => {
+    const files = fs.readdirSync(path.join(__dirname, '../uploads'));
+    res.json(files.map(file => ({ filename: file })));
+  });
   
+
 module.exports = router;
