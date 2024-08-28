@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const ffmpeg = require('fluent-ffmpeg');
 
 // Handle file upload:
 const fileUpload = require('express-fileupload');
@@ -23,5 +24,22 @@ router.post('/upload', (req, res) => {
         res.send('Video uploaded successfully!');
     });
 });
+
+// Transcode video route
+router.post('/transcode', (req, res) => {
+    const { filename, format } = req.body;
+    const inputPath = path.join(__dirname, '../uploads/', filename);
+    const outputPath = path.join(__dirname, '../transcoded/', `${path.parse(filename).name}.${format}`);
+  
+    ffmpeg(inputPath)
+      .toFormat(format)
+      .on('end', () => {
+        res.send('Transcoding finished!');
+      })
+      .on('error', err => {
+        res.status(500).send(`Error: ${err.message}`);
+      })
+      .save(outputPath);
+  });
 
 module.exports = router;
