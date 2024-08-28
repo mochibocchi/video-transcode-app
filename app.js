@@ -6,10 +6,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const authRoutes = require('./routes/auth');
-const videoRoutes = require('./routes/video')
+const videoRoutes = require('./routes/video');
 
 app.use('/auth', authRoutes);
 app.use('/video', videoRoutes);
+
+// Redirect root to the login page
+app.get('/', (req, res) => {
+  res.redirect('/login.html');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
