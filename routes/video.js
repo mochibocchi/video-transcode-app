@@ -8,7 +8,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const fileUpload = require('express-fileupload');
 router.use(fileUpload());
 
-// Upload Video route
+// Upload video route
 router.post('/upload', (req, res) => {
     if (!req.files || !req.files.video) {
         return res.status(400).send('Please try again. Did not upload video.');
@@ -42,4 +42,20 @@ router.post('/transcode', (req, res) => {
       .save(outputPath);
   });
 
+// Download video route
+router.get('/download/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const uploadPath = path.join(__dirname, '../uploads', filename);
+    const transcodedPath = path.join(__dirname, '../transcoded', filename);
+  
+    // Check if the file exists in the uploads or transcoded directory
+    if (fs.existsSync(uploadPath)) {
+      res.download(uploadPath);
+    } else if (fs.existsSync(transcodedPath)) {
+      res.download(transcodedPath);
+    } else {
+      res.status(404).send('File not found');
+    }
+  });
+  
 module.exports = router;
