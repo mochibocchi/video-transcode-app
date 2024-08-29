@@ -100,6 +100,8 @@ function renderFileList(files, elementId, isTranscoded = false) {
 }
 
 async function transcode(filename) {
+    console.log('Starting transcoding for:', filename);
+    transcodingBarContainer.classList.remove('hidden');
     const format = prompt("Enter the desired format (e.g., mp4, avi, mkv):");
     if (!format) {
         alert("No format specified. Transcoding canceled.");
@@ -108,16 +110,55 @@ async function transcode(filename) {
 
     const token = localStorage.getItem('token');
     try {
-        await apiRequest('/video/transcode', 'POST', token, JSON.stringify({ filename, format }));
-
-        alert('Transcoding finished successfully!');
-        const transcodedFilename = `${filename.split('.').slice(0, -1).join('.')}.${format}`;
-        appendTranscodedFile(transcodedFilename);
-
+        const response = await apiRequest('/video/transcode', 'POST', token, JSON.stringify({ filename, format }));
+        if (response.ok) {
+            const jobId = filename;
+            console.log('Transcoding started, polling for progress...');
+            pollProgress(jobId, format);
+        } else {
+            alert('Transcoding failed!');
+        }
     } catch (error) {
+        console.error('Transcoding error:', error.message);
         alert(`Transcoding failed! ${error.message}`);
     }
 }
+
+
+function pollProgress(jobId, format) {
+    const transcodingBar = document.getElementById('transcodingBar');
+    const transcodingBarContainer = document.getElementById('transcodingBarContainer');
+
+    const intervalId = setInterval(async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await apiRequest(`/video/transcode/progress/${jobId}`, 'GET', token);
+            const data = await response.json();
+            console.log('Progress Data:', data); 
+            const progress = data.progress;
+            
+            transcodingBar.style.width = `${progress}%`;
+            transcodingBar.textContent = `${progress}%`;
+
+            if (progress === 100) {
+                clearInterval(intervalId);
+                transcodingBarContainer.classList.add('hidden');
+                transcodingBar.style.width = '0%';
+                transcodingBar.textContent = '0%';
+
+                const transcodedFilename = `${jobId.split('.').slice(0, -1).join('.')}.${format}`;
+                appendTranscodedFile(transcodedFilename);
+                alert('Transcoding finished successfully!');
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+            clearInterval(intervalId);
+            transcodingBarContainer.classList.add('hidden');
+            alert(`Failed to retrieve progress: ${error.message}`);
+        }
+    }, 1000); // Poll every second
+}
+
 
 function appendTranscodedFile(transcodedFilename) {
     const transcodedList = document.getElementById('transcodedList');
@@ -129,5 +170,6 @@ function appendTranscodedFile(transcodedFilename) {
     `;
     transcodedList.appendChild(li);
 }
+
 
 window.onload = loadFiles;
