@@ -4,27 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Files</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Your Files</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <label for="video">Upload a video:</label>
-        <input type="file" id="video" name="video" required>
-        <br>
-        <button type="submit">Upload</button>
-    </form>
+<body class="bg-gray-100 text-gray-900">
+    <h1 class="text-4xl font-bold text-center bg-green-500 text-white py-6">Your Files</h1>
 
-    <h2>Uploaded Videos</h2>
-    <ul id="fileList"></ul>
+    <div class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-lg shadow-lg">
+        <form id="uploadForm" class="mb-4" enctype="multipart/form-data">
+            <label for="video" class="block text-gray-700 font-bold mb-2">Upload a video:</label>
+            <input type="file" id="video" name="video" class="block w-full text-gray-700 border rounded-lg p-2 mb-4" required>
+            <button type="submit" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">
+                Upload
+            </button>
+        </form>
+
+        <h2 class="text-2xl font-bold text-center mt-8">Uploaded Videos</h2>
+        <ul id="uploadedList" class="mt-4 space-y-4"></ul> 
+        <h2 class="text-2xl font-bold text-center mt-8">Transcoded Videos</h2>
+        <ul id="transcodedList" class="mt-4 space-y-4"></ul>
+    </div>
 
     <script>
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const video = document.getElementById('video').files[0];
             const formData = new FormData();
             formData.append('video', video);
-
             const token = localStorage.getItem('token');
 
             const response = await fetch('/video/upload', {
@@ -44,51 +49,53 @@
         });
 
         async function loadFiles() {
-            const token = localStorage.getItem('token');
-
-            const response = await fetch('/video/files', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const files = await response.json();
-            const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '';
-
-            files.forEach(file => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    ${file.filename}
-                    <a href="/video/download/${file.filename}" target="_blank">Download</a>
-                    <button onclick="transcode('${file.filename}')">Transcode</button>
-                `;
-                fileList.appendChild(li);
-            });
-        }
-
-        async function transcode(filename) {
-            const format = prompt('Enter the format to transcode to (e.g., mp4, avi):');
-            const token = localStorage.getItem('token');
-
-            const response = await fetch('/video/transcode', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ filename, format })
-            });
-
-            if (response.ok) {
-                alert('Transcoding started!');
-            } else {
-                alert('Transcoding failed!');
+        const token = localStorage.getItem('token');
+        const response = await fetch('/video/files', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
+        });
+        
+        if (!response.ok) {
+            alert('Failed to load files!');
+            return;
         }
+        
+        const files = await response.json();
+        
+        // Handle uploaded files
+        const uploadedList = document.getElementById('uploadedList');
+        uploadedList.innerHTML = '';
+        files.uploadedFiles.forEach(file => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center bg-white p-4 rounded-lg shadow-md';
+            li.innerHTML = `
+                <span class="text-gray-700 mr-auto">${file.filename}</span>
+                <div class="flex space-x-2">
+                    <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
+                    <button onclick="transcode('${file.filename}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Transcode</button>
+                </div>
+            `;
+            uploadedList.appendChild(li);
+        });
+        
+        // Handle transcoded files
+        const transcodedList = document.getElementById('transcodedList');
+        transcodedList.innerHTML = '';
+        files.transcodedFiles.forEach(file => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center bg-white p-4 rounded-lg shadow-md';
+            li.innerHTML = `
+                <span class="text-gray-700 mr-auto">${file.filename}</span>
+                <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
+            `;
+            transcodedList.appendChild(li);
+        });
+    }
 
-        window.onload = loadFiles;
+    window.onload = loadFiles;
+
     </script>
 </body>
 </html>

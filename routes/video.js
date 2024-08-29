@@ -59,10 +59,16 @@ router.get('/download/:filename', (req, res) => {
   });
 
   // List uploaded files route
-router.get('/files', (req, res) => {
-    const files = fs.readdirSync(path.join(__dirname, '../uploads'));
-    res.json(files.map(file => ({ filename: file })));
-  });
+  router.get('/files', (req, res) => {
+    const uploadedFiles = fs.readdirSync(path.join(__dirname, '../uploads'));
+    const transcodedFiles = fs.readdirSync(path.join(__dirname, '../transcoded'));
+
+    res.json({
+        uploadedFiles: uploadedFiles.map(file => ({ filename: file })),
+        transcodedFiles: transcodedFiles.map(file => ({ filename: file }))
+    });
+});
+
   
 
 module.exports = router;
