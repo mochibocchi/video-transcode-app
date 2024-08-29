@@ -25,30 +25,69 @@
     </div>
 
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const video = document.getElementById('video').files[0];
-            const formData = new FormData();
-            formData.append('video', video);
-            const token = localStorage.getItem('token');
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const video = document.getElementById('video').files[0];
+        const formData = new FormData();
+        formData.append('video', video);
+        const token = localStorage.getItem('token');
 
-            const response = await fetch('/video/upload', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (response.ok) {
-                alert('Upload successful!');
-                loadFiles();
-            } else {
-                alert('Upload failed!');
-            }
+        const response = await fetch('/video/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
         });
 
-        async function loadFiles() {
+        if (response.ok) {
+            alert('Upload successful!');
+            loadFiles();
+        } else {
+            alert('Upload failed!');
+        }
+    });
+
+    async function transcode(filename) {
+    const format = prompt("Enter the desired format (e.g., mp4, avi, mkv):");
+    if (!format) {
+        alert("No format specified. Transcoding canceled.");
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    const response = await fetch('/video/transcode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ filename, format })
+    });
+
+    if (response.ok) {
+        alert('Transcoding finished successfully!');
+        
+        const transcodedFilename = `${filename.split('.').slice(0, -1).join('.')}.${format}`;
+        
+        // Dynamically add the new transcoded file to the transcoded list
+        const transcodedList = document.getElementById('transcodedList');
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center bg-white p-4 rounded-lg shadow-md';
+        li.innerHTML = `
+            <span class="text-gray-700 mr-auto">${transcodedFilename}</span>
+            <a href="/video/download/${transcodedFilename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
+        `;
+        transcodedList.appendChild(li);
+
+    } else {
+        const errorMessage = await response.text();
+        alert(`Transcoding failed! ${errorMessage}`);
+    }
+}
+
+
+    async function loadFiles() {
         const token = localStorage.getItem('token');
         const response = await fetch('/video/files', {
             method: 'GET',
@@ -95,7 +134,7 @@
     }
 
     window.onload = loadFiles;
+</script>
 
-    </script>
 </body>
 </html>
