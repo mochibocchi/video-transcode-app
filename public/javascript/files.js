@@ -46,7 +46,7 @@ function handleVideoUpload(formData, token) {
     xhr.onreadystatechange = () => {
         if (xhr.readyState === XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
-                alert('Upload successful!');
+                // alert('Upload successful!');
                 loadFiles();
             } else {
                 alert('Upload failed!');
