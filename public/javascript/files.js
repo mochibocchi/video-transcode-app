@@ -96,9 +96,15 @@ function renderFileList(files, elementId, isTranscoded = false) {
                 <source src="${videoUrl}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
-            <div class="flex justify-end space-x-2">
-                <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
-                ${!isTranscoded ? `<button onclick="transcode('${file.filename}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Transcode</button>` : ''}
+            <div class="flex flex-col space-y-2">
+                <div class="flex justify-end space-x-2">
+                    <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
+                    ${!isTranscoded ? `<button onclick="transcode('${file.filename}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Transcode</button>` : ''}
+                </div>
+                ${!isTranscoded ? `
+                <div class="w-full bg-gray-200 rounded-lg hidden" id="transcodingBarContainer-${file.filename}">
+                    <div class="bg-green-500 text-xs font-medium text-center text-white p-1 rounded-lg" id="transcodingBar-${file.filename}" style="width: 0%;">0%</div>
+                </div>` : ''}
             </div>
         `;
 
@@ -106,13 +112,16 @@ function renderFileList(files, elementId, isTranscoded = false) {
     });
 }
 
-
-async function transcode(filename) {
+async function transcode(filename, elementId) {
     console.log('Starting transcoding for:', filename);
+    const transcodingBarContainer = document.getElementById(`transcodingBarContainer-${filename}`);
+    const transcodingBar = document.getElementById(`transcodingBar-${filename}`);
     transcodingBarContainer.classList.remove('hidden');
+    
     const format = prompt("Enter the desired format (e.g., mp4, avi, mkv):");
     if (!format) {
         alert("No format specified. Transcoding canceled.");
+        transcodingBarContainer.classList.add('hidden');
         return;
     }
 
@@ -122,20 +131,19 @@ async function transcode(filename) {
         if (response.ok) {
             const jobId = filename;
             console.log('Transcoding started, polling for progress...');
-            pollProgress(jobId);
+            pollProgress(jobId, transcodingBar, transcodingBarContainer, elementId);
         } else {
             alert('Transcoding failed!');
+            transcodingBarContainer.classList.add('hidden');
         }
     } catch (error) {
         console.error('Transcoding error:', error.message);
         alert(`Transcoding failed! ${error.message}`);
+        transcodingBarContainer.classList.add('hidden');
     }
 }
 
-async function pollProgress(jobId) {
-    const transcodingBar = document.getElementById('transcodingBar');
-    const transcodingBarContainer = document.getElementById('transcodingBarContainer');
-
+async function pollProgress(jobId, transcodingBar, transcodingBarContainer, elementId) {
     let completed = false;
     while (!completed) {
         try {
@@ -146,7 +154,7 @@ async function pollProgress(jobId) {
             transcodingBar.style.width = `${progress}%`;
             transcodingBar.textContent = `${Math.round(progress)}%`;
 
-            if (progress >= 100 || completed) {
+            if (progress >= 100) {
                 completed = true;
                 transcodingBar.style.width = '100%'; 
                 transcodingBar.textContent = '100%';
@@ -154,16 +162,16 @@ async function pollProgress(jobId) {
                 transcodingBarContainer.classList.add('hidden');
                 transcodingBar.style.width = '0%';
                 transcodingBar.textContent = '0%';
-                loadFiles();
-                // alert('Transcoding complete!');
+                loadFiles(); // Reload files to reflect the transcoded file
             }
         } catch (error) {
             console.error('Error polling progress:', error.message);
             alert('Failed to poll transcoding progress.');
+            transcodingBarContainer.classList.add('hidden');
             break;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 300)); //300ms
+        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms
     }
 }
 
