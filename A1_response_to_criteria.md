@@ -128,10 +128,11 @@ Additional criteria
 
 ### Sophisticated data visualisations
 
-- **One line description:** Not attempted
-- **Video timestamp:**
+- **One line description:** Fancy web client: Single page application with additional interaction features such as HTML5 video player
+- **Video timestamp:** 1:50
 - **Relevant files:**
-    - 
+    - /public/files.html
+    - /public/javascript/files.js
 
 
 ### Additional kinds of data
@@ -169,7 +170,10 @@ within its respective card container. Also dynamically display upload progress t
 
 ### Other
 
-- **One line description:** Not attempted
+- **One line description:** Using Tailwind CSS for front-end
 - **Video timestamp:**
 - **Relevant files:**
-    - 
+    - /public/files.html
+    - /public/login.html
+    - /public/css/styles.css
+    - tailwind.config.js
