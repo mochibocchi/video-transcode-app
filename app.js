@@ -10,6 +10,8 @@ const videoRoutes = require('./routes/video');
 
 app.use('/auth', authRoutes);
 app.use('/video', videoRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/transcoded', express.static(path.join(__dirname, 'transcoded')));
 
 // Redirect root to the login page
 app.get('/', (req, res) => {

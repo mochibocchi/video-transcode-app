@@ -86,18 +86,26 @@ function renderFileList(files, elementId, isTranscoded = false) {
     const listElement = document.getElementById(elementId);
     listElement.innerHTML = '';
     files.forEach(file => {
+        const videoUrl = isTranscoded ? `/transcoded/${file.filename}` : `/uploads/${file.filename}`;
         const li = document.createElement('li');
-        li.className = 'flex justify-between items-center bg-white p-4 rounded-lg shadow-md';
+        li.className = 'flex flex-col bg-white p-4 rounded-lg shadow-md space-y-4';
+
         li.innerHTML = `
-            <span class="text-gray-700 mr-auto">${file.filename}</span>
-            <div class="flex space-x-2">
+            <span class="text-gray-700 mr-auto font-bold">${file.filename}</span>
+            <video controls class="w-full h-auto rounded-lg">
+                <source src="${videoUrl}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div class="flex justify-end space-x-2">
                 <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
                 ${!isTranscoded ? `<button onclick="transcode('${file.filename}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Transcode</button>` : ''}
             </div>
         `;
+
         listElement.appendChild(li);
     });
 }
+
 
 async function transcode(filename) {
     console.log('Starting transcoding for:', filename);

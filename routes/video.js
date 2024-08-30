@@ -70,10 +70,6 @@ router.get('/transcode/progress/:jobId', (req, res) => {
   res.json({ progress });
 });
 
-
-
-
-
 // Download video route
 router.get('/download/:filename', (req, res) => {
     const filename = req.params.filename;
@@ -101,6 +97,6 @@ router.get('/download/:filename', (req, res) => {
     });
 });
 
-  
+
 
 module.exports = router;
