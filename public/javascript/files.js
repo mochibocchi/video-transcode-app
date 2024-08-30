@@ -21,35 +21,53 @@ async function apiRequest(url, method, token, body = null, contentType = 'applic
     return response;
 }
 
-function handleVideoUpload(formData, token) {
+function handleVideoUpload(formData, token, fileName) {
     const xhr = new XMLHttpRequest();
+
+    // Create a new upload bar for this file
+    const uploadContainer = document.createElement('div');
+    uploadContainer.className = 'mb-4';
+
+    const uploadBarContainer = document.createElement('div');
+    uploadBarContainer.className = 'w-full bg-gray-200 rounded-lg mt-4';
+
+    const uploadBar = document.createElement('div');
+    uploadBar.className = 'bg-green-500 text-xs font-medium text-center text-white p-1 rounded-lg';
+    uploadBar.style.width = '0%';
+    uploadBar.textContent = '0%';
+
+    uploadBarContainer.appendChild(uploadBar);
+    uploadContainer.appendChild(uploadBarContainer);
+
+    // Append the new progress bar under the upload form
+    document.getElementById('uploadForm').after(uploadContainer);
 
     xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
-            const loadingBar = document.getElementById('loadingBar');
-            loadingBar.style.width = `${percentComplete}%`;
-            loadingBar.textContent = `${Math.round(percentComplete)}%`;
+            uploadBar.style.width = `${percentComplete}%`;
+            uploadBar.textContent = `${Math.round(percentComplete)}%`;
         }
     });
 
     xhr.addEventListener('loadstart', () => {
-        document.getElementById('loadingBarContainer').classList.remove('hidden');
+        uploadBarContainer.classList.remove('hidden');
     });
 
     xhr.addEventListener('loadend', () => {
-        document.getElementById('loadingBarContainer').classList.add('hidden');
-        document.getElementById('loadingBar').style.width = '0%';
-        document.getElementById('loadingBar').textContent = '0%';
+        uploadBar.style.width = '100%';
+        uploadBar.textContent = 'Upload Complete!';
+        setTimeout(() => {
+            uploadContainer.remove();
+            loadFiles(); // Reload the file list after upload
+        }, 1000); // Remove the progress bar after a brief delay
     });
 
     xhr.onreadystatechange = () => {
         if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                alert('Upload successful!');
-                loadFiles();
-            } else {
+            if (xhr.status !== 200) {
                 alert('Upload failed!');
+                uploadContainer.remove();
             }
         }
     };
@@ -61,11 +79,14 @@ function handleVideoUpload(formData, token) {
 
 document.getElementById('uploadForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const video = document.getElementById('video').files[0];
-    const formData = new FormData();
-    formData.append('video', video);
+    const files = document.getElementById('video').files;
     const token = localStorage.getItem('token');
-    handleVideoUpload(formData, token);
+
+    Array.from(files).forEach((file) => {
+        const formData = new FormData();
+        formData.append('video', file);
+        handleVideoUpload(formData, token, file.name);
+    });
 });
 
 async function loadFiles() {

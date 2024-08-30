@@ -81,7 +81,7 @@
             if (response.ok) {
                 const data = await response.json();
                 localStorage.setItem('token', data.token);
-                alert('Login successful!');
+                // alert('Login successful!');
                 window.location.href = '/files.html';
             } else {
                 alert('Login failed!');
