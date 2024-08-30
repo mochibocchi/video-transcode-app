@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const { spawn } = require('child_process');
+const progressStore = {};
 
 // Handle file upload:
 const fileUpload = require('express-fileupload');
@@ -26,59 +27,50 @@ router.post('/upload', (req, res) => {
     });
 });
 
-// // Transcode video route
-// router.post('/transcode', (req, res) => {
-//   const { filename, format } = req.body;
-//   const inputPath = path.join(__dirname, '../uploads/', filename);
-//   const outputPath = path.join(__dirname, '../transcoded/', `${path.parse(filename).name}.${format}`);
-
-//   const ffmpegProcess = ffmpeg(inputPath)
-//       .toFormat(format)
-//       .on('progress', progress => {
-//           // Log progress to see it on the server-side
-//           console.log(`Processing: ${progress.percent}% done`);
-//       })
-//       .on('end', () => {
-//           res.send('Transcoding finished!');
-//       })
-//       .on('error', err => {
-//           res.status(500).send(`Error: ${err.message}`);
-//       })
-//       .save(outputPath);
-// });
-const progressStore = {};
-
 router.post('/transcode', (req, res) => {
-    const { filename, format } = req.body;
-    const inputPath = path.join(__dirname, '../uploads/', filename);
-    const outputPath = path.join(__dirname, '../transcoded/', `${path.parse(filename).name}.${format}`);
+  const { filename, format } = req.body;
+  const inputPath = path.join(__dirname, '../uploads/', filename);
+  const outputPath = path.join(__dirname, '../transcoded/', `${path.parse(filename).name}.${format}`);
 
-    const jobId = filename;
+  const jobId = filename;
 
-    progressStore[jobId] = 0; 
+  progressStore[jobId] = 0;
 
-    ffmpeg(inputPath)
-        .toFormat(format)
-        .on('progress', progress => {
-            progressStore[jobId] = progress.percent;
-        })
-        .on('end', () => {
-            progressStore[jobId] = 100;
-            res.status(200).send('Transcoding finished!');
-        })
-        .on('error', err => {
-            delete progressStore[jobId];
-            res.status(500).send(`Error: ${err.message}`);
-        })
-        .save(outputPath);
+  // Send an initial response to the client immediately
+  res.status(202).json({ message: 'Transcoding started', jobId });
+
+  ffmpeg(inputPath)
+      .toFormat(format)
+      .on('progress', progress => {
+          console.log(`Processing: ${progress.percent}% done`);
+          progressStore[jobId] = progress.percent;
+      })
+      .on('end', () => {
+          console.log(`Transcoding complete for ${jobId}`);
+          progressStore[jobId] = 100;
+      })
+      .on('error', err => {
+          console.error(`Error during transcoding: ${err.message}`);
+          delete progressStore[jobId];
+      })
+      .save(outputPath);
 });
 
-// Route to get transcoding progress
+
+// Endpoint to get transcoding progress
 router.get('/transcode/progress/:jobId', (req, res) => {
-    const jobId = req.params.jobId;
-    const progress = progressStore[jobId] || 0; // Return 0 if no progress is available yet
-    res.json({ progress });
+  const jobId = req.params.jobId;
+  const progress = progressStore[jobId] || 0; 
+  
+  // Disable caching
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
+  res.json({ progress });
 });
+
+
 
 
 

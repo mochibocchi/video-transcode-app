@@ -114,7 +114,7 @@ async function transcode(filename) {
         if (response.ok) {
             const jobId = filename;
             console.log('Transcoding started, polling for progress...');
-            pollProgress(jobId, format);
+            pollProgress(jobId);
         } else {
             alert('Transcoding failed!');
         }
@@ -124,41 +124,40 @@ async function transcode(filename) {
     }
 }
 
-
-function pollProgress(jobId, format) {
+async function pollProgress(jobId) {
     const transcodingBar = document.getElementById('transcodingBar');
     const transcodingBarContainer = document.getElementById('transcodingBarContainer');
 
-    const intervalId = setInterval(async () => {
-        const token = localStorage.getItem('token');
+    let completed = false;
+    while (!completed) {
         try {
-            const response = await apiRequest(`/video/transcode/progress/${jobId}`, 'GET', token);
+            const response = await apiRequest(`/video/transcode/progress/${jobId}`, 'GET');
             const data = await response.json();
-            console.log('Progress Data:', data); 
-            const progress = data.progress;
-            
-            transcodingBar.style.width = `${progress}%`;
-            transcodingBar.textContent = `${progress}%`;
 
-            if (progress === 100) {
-                clearInterval(intervalId);
+            let progress = data.progress || 0;
+            transcodingBar.style.width = `${progress}%`;
+            transcodingBar.textContent = `${Math.round(progress)}%`;
+
+            if (progress >= 100 || completed) {
+                completed = true;
+                transcodingBar.style.width = '100%'; 
+                transcodingBar.textContent = '100%';
+                
                 transcodingBarContainer.classList.add('hidden');
                 transcodingBar.style.width = '0%';
                 transcodingBar.textContent = '0%';
-
-                const transcodedFilename = `${jobId.split('.').slice(0, -1).join('.')}.${format}`;
-                appendTranscodedFile(transcodedFilename);
-                alert('Transcoding finished successfully!');
+                loadFiles();
+                // alert('Transcoding complete!');
             }
         } catch (error) {
-            console.error('Polling error:', error);
-            clearInterval(intervalId);
-            transcodingBarContainer.classList.add('hidden');
-            alert(`Failed to retrieve progress: ${error.message}`);
+            console.error('Error polling progress:', error.message);
+            alert('Failed to poll transcoding progress.');
+            break;
         }
-    }, 1000); // Poll every second
-}
 
+        await new Promise(resolve => setTimeout(resolve, 300)); //300ms
+    }
+}
 
 function appendTranscodedFile(transcodedFilename) {
     const transcodedList = document.getElementById('transcodedList');
