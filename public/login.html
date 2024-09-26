@@ -64,29 +64,39 @@
 <!-- Log in code adapted from: https://readymadeui.com/tailwind-blocks/login-form -->
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-            const response = await fetch('/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
+        const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+            Username: username,
+            Password: password,
+    });
 
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('token', data.token);
-                // alert('Login successful!');
-                window.location.href = '/files.html';
-            } else {
-                alert('Login failed!');
-            }
-        });
+    const userPool = new AmazonCognitoIdentity.CognitoUserPool({
+        UserPoolId: 'ap-southeast-2_H6gkA6MG0',
+        ClientId: '4h0e4omhie34glp42dgvro423u'
+    });
+
+    const userData = {
+        Username: username,
+        Pool: userPool
+    };
+
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+    cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: function (result) {
+            const token = result.getIdToken().getJwtToken();
+            localStorage.setItem('token', token);
+            window.location.href = '/files.html';
+        },
+        onFailure: function (err) {
+            alert(err.message || JSON.stringify(err));
+        }
+    });
+});
     </script>
 </body>
 </html>

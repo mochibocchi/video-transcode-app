@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Confirmation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center">
+        <form id="confirmForm" class="p-8 bg-white shadow rounded w-80">
+            <h1 class="text-xl font-bold mb-4">Confirm Your Email</h1>
+            <input type="text" id="confirmationCode" placeholder="Confirmation Code" class="w-full mb-4 p-2 border" required>
+            <button type="submit" class="w-full bg-green-500 text-white p-2">Confirm</button>
+        </form>
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.991.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/4.5.11/amazon-cognito-identity.min.js"></script>
+    <script>
+        const confirmForm = document.getElementById('confirmForm');
+        confirmForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const confirmationCode = document.getElementById('confirmationCode').value;
+
+            const poolData = {
+                UserPoolId: 'ap-southeast-2_H6gkA6MG0', 
+                ClientId: '4h0e4omhie34glp42dgvro423u'
+            };
+
+            const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+            
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+                Username: 'user1', // Replace with actual username from sign-up page
+                Pool: userPool
+            });
+
+            cognitoUser.confirmRegistration(confirmationCode, true, (err, result) => {
+                if (err) {
+                    alert(err.message || JSON.stringify(err));
+                    return;
+                }
+                alert('Confirmation successful! You can now log in.');
+                window.location.href = 'login.html'; // Redirect to login page after confirmation
+            });
+        });
+    </script>
+</body>
+</html>

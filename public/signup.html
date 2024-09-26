@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center">
+        <form id="signupForm" class="p-8 bg-white shadow rounded w-80">
+            <h1 class="text-xl font-bold mb-4">Sign Up</h1>
+            <input type="text" id="username" placeholder="Username" class="w-full mb-4 p-2 border" required>
+            <input type="email" id="email" placeholder="Email" class="w-full mb-4 p-2 border" required>
+            <input type="password" id="password" placeholder="Password" class="w-full mb-4 p-2 border" required>
+            <button type="submit" class="w-full bg-green-500 text-white p-2">Sign Up</button>
+        </form>
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1246.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@5.2.4/dist/amazon-cognito-identity.min.js"></script>
+
+    <script>
+        const signupForm = document.getElementById('signupForm');
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const poolData = {
+                UserPoolId: 'ap-southeast-2_H6gkA6MG0',
+                ClientId: '4h0e4omhie34glp42dgvro423u'
+            };
+
+            const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+            // Sign up the user
+            userPool.signUp(username, password, [{ Name: 'email', Value: email }], null, (err, result) => {
+                if (err) {
+                    alert(err.message || JSON.stringify(err));
+                    return;
+                }
+
+                // Store the username in localStorage to use during confirmation
+                localStorage.setItem('username', username);
+
+                // Redirect to the confirmation page
+                alert('Sign up successful! Check your email to confirm your account.');
+                window.location.href = 'confirm.html'; 
+            });
+        });
+    </script>
+</body>
+</html>
