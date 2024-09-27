@@ -22,3 +22,13 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+const AWS = require('aws-sdk');
+
+AWS.config.update({
+    accessKeyId: "ASIA5DYSEEJ45BCRJC5H",
+    secretAccessKey: "AyhibQAVIR1uxQ3vkdReBL7K71UsdcgCfxbnLmwQ",
+    region: 'ap-southeast-2'
+});
+
+const s3 = new AWS.S3();

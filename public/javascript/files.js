@@ -1,3 +1,10 @@
+// Request a pre-signed URL from the server
+async function getUploadURL(filename, fileType) {
+    const response = await fetch(`/video/upload-url?filename=${filename}&fileType=${fileType}`);
+    const data = await response.json();
+    return data.uploadURL;
+}
+
 // Utility function to handle API requests
 async function apiRequest(url, method, token, body = null, contentType = 'application/json') {
     const headers = {
@@ -77,16 +84,35 @@ function handleVideoUpload(formData, token, fileName) {
     xhr.send(formData);
 }
 
-document.getElementById('uploadForm').addEventListener('submit', (e) => {
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const files = document.getElementById('video').files;
-    const token = localStorage.getItem('token');
+    if (files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
-        const formData = new FormData();
-        formData.append('video', file);
-        handleVideoUpload(formData, token, file.name);
-    });
+    const file = files[0];
+    const filename = file.name;
+    const fileType = file.type;
+
+    try {
+        // Get the pre-signed URL for this video file
+        const uploadURL = await getUploadURL(filename, fileType);
+
+        // Upload the video to S3 directly using the pre-signed URL
+        await fetch(uploadURL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': fileType
+            },
+            body: file
+        });
+
+        alert('Video uploaded successfully!');
+        loadFiles();
+
+    } catch (error) {
+        console.error('Error uploading video:', error);
+        alert('Error uploading video');
+    }
 });
 
 async function loadFiles() {
@@ -103,35 +129,28 @@ async function loadFiles() {
     }
 }
 
-function renderFileList(files, elementId, isTranscoded = false) {
+function renderFileList(files, elementId) {
     const listElement = document.getElementById(elementId);
     listElement.innerHTML = '';
+
     files.forEach(file => {
-        const videoUrl = isTranscoded ? `/transcoded/${file.filename}` : `/uploads/${file.filename}`;
         const li = document.createElement('li');
-        li.className = 'flex flex-col bg-white p-4 rounded-lg shadow-md space-y-4';
+        li.className = 'flex justify-between items-center bg-white p-4 rounded-lg shadow-md';
 
-        li.innerHTML = `
-            <span class="text-gray-700 mr-auto font-bold">${file.filename}</span>
-            <video controls class="w-full h-auto rounded-lg">
-                <source src="${videoUrl}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-            <div class="flex flex-col space-y-2">
-                <div class="flex justify-end space-x-2">
-                    <a href="/video/download/${file.filename}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Download</a>
-                    ${!isTranscoded ? `<button onclick="transcode('${file.filename}')" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Transcode</button>` : ''}
-                </div>
-                ${!isTranscoded ? `
-                <div class="w-full bg-gray-200 rounded-lg hidden" id="transcodingBarContainer-${file.filename}">
-                    <div class="bg-green-500 text-xs font-medium text-center text-white p-1 rounded-lg" id="transcodingBar-${file.filename}" style="width: 0%;">0%</div>
-                </div>` : ''}
-            </div>
-        `;
+        // Create a button to get a pre-signed URL for downloading the file
+        const downloadButton = document.createElement('button');
+        downloadButton.textContent = 'Download';
+        downloadButton.onclick = async () => {
+            const response = await fetch(`/video/download-url?filename=${file.filename}`);
+            const data = await response.json();
+            window.location.href = data.downloadURL;  // Redirect to the pre-signed URL for download
+        };
 
+        li.appendChild(downloadButton);
         listElement.appendChild(li);
     });
 }
+
 
 async function transcode(filename, elementId) {
     console.log('Starting transcoding for:', filename);
@@ -183,7 +202,7 @@ async function pollProgress(jobId, transcodingBar, transcodingBarContainer, elem
                 transcodingBarContainer.classList.add('hidden');
                 transcodingBar.style.width = '0%';
                 transcodingBar.textContent = '0%';
-                loadFiles(); // Reload files to reflect the transcoded file
+                loadFiles();
             }
         } catch (error) {
             console.error('Error polling progress:', error.message);

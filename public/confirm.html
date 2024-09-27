@@ -3,46 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Confirmation</title>
+    <title>Confirm Registration</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1246.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@5.2.4/dist/amazon-cognito-identity.min.js"></script>
 </head>
-<body>
-    <div class="min-h-screen flex items-center justify-center">
-        <form id="confirmForm" class="p-8 bg-white shadow rounded w-80">
-            <h1 class="text-xl font-bold mb-4">Confirm Your Email</h1>
-            <input type="text" id="confirmationCode" placeholder="Confirmation Code" class="w-full mb-4 p-2 border" required>
-            <button type="submit" class="w-full bg-green-500 text-white p-2">Confirm</button>
+<body class="bg-gray-100">
+    <div class="max-w-md mx-auto mt-10 p-5 bg-white rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold mb-4 text-center">Confirm Your Registration</h2>
+        <form id="confirmForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>
+                <input type="text" id="username" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+            </div>
+
+            <div>
+                <label for="confirmationCode" class="block text-sm font-medium text-gray-700">Confirmation Code:</label>
+                <input type="text" id="confirmationCode" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
+            </div>
+
+            <button type="submit" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Confirm</button>
         </form>
     </div>
 
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.991.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/4.5.11/amazon-cognito-identity.min.js"></script>
     <script>
         const confirmForm = document.getElementById('confirmForm');
         confirmForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
+            const username = document.getElementById('username').value;
             const confirmationCode = document.getElementById('confirmationCode').value;
 
             const poolData = {
-                UserPoolId: 'ap-southeast-2_H6gkA6MG0', 
+                UserPoolId: 'ap-southeast-2_H6gkA6MG0',
                 ClientId: '4h0e4omhie34glp42dgvro423u'
             };
 
             const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-            
-            const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-                Username: 'user1', // Replace with actual username from sign-up page
-                Pool: userPool
-            });
+            const userData = { Username: username, Pool: userPool };
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
             cognitoUser.confirmRegistration(confirmationCode, true, (err, result) => {
                 if (err) {
                     alert(err.message || JSON.stringify(err));
                     return;
                 }
-                alert('Confirmation successful! You can now log in.');
-                window.location.href = 'login.html'; // Redirect to login page after confirmation
+                alert('Confirmation successful!');
+                window.location.href = "/login.html";
             });
         });
     </script>

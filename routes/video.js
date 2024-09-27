@@ -10,6 +10,10 @@ const progressStore = {};
 const fileUpload = require('express-fileupload');
 router.use(fileUpload());
 
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3();
+const BUCKET_NAME = 'n10526889-assessment-2';
+
 // Upload video route
 router.post('/upload', (req, res) => {
     if (!req.files || !req.files.video) {
@@ -97,6 +101,45 @@ router.get('/download/:filename', (req, res) => {
     });
 });
 
+// Route to generate pre-signed URL for uploading video
+router.get('/upload-url', (req, res) => {
+  const { filename, fileType } = req.query;
+
+  const params = {
+      Bucket: BUCKET_NAME,
+      Key: filename,
+      Expires: 60, // URL expiration time (in seconds)
+      ContentType: fileType,
+      ACL: 'public-read'
+  };
+
+  s3.getSignedUrl('putObject', params, (err, url) => {
+      if (err) {
+          console.error('Error generating signed URL', err);
+          return res.status(500).json({ error: 'Error generating signed URL' });
+      }
+      res.json({ uploadURL: url });
+  });
+});
+
+// Route to generate pre-signed URL for downloading video
+router.get('/download-url', (req, res) => {
+  const { filename } = req.query;
+
+  const params = {
+      Bucket: BUCKET_NAME,
+      Key: filename,  
+      Expires: 60     // URL expiration time (in seconds)
+  };
+
+  s3.getSignedUrl('getObject', params, (err, url) => {
+      if (err) {
+          console.error('Error generating download URL', err);
+          return res.status(500).json({ error: 'Error generating download URL' });
+      }
+      res.json({ downloadURL: url });
+  });
+});
 
 
 module.exports = router;
