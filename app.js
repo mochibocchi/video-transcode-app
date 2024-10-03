@@ -26,9 +26,10 @@ app.listen(PORT, () => {
 const AWS = require('aws-sdk');
 
 AWS.config.update({
-    accessKeyId: "ASIA5DYSEEJ45BCRJC5H",
-    secretAccessKey: "AyhibQAVIR1uxQ3vkdReBL7K71UsdcgCfxbnLmwQ",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     region: 'ap-southeast-2'
 });
 
 const s3 = new AWS.S3();
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
